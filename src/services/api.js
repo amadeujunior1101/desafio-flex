@@ -6,7 +6,7 @@ const usersApi = axios.create({
 
 const apiDivida = axios.create({
   baseURL:
-    "https://provadev.xlab.digital/api/v1/divida/5ca56b25c4cc0e390083e71d?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403",
+    "https://provadev.xlab.digital/api/v1",
 });
 
 export { usersApi, apiDivida };

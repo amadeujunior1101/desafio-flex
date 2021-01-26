@@ -19,7 +19,8 @@ const GlobalStyle = createGlobalStyle`
     --unnamed-color-777777: #777777;
     --unnamed-color-E8FFE3: #E8FFE3;
     --unnamed-color-bc3434: #BC3434;
-    --unnamed-color-f8f8f8: #F8F8F8;
+    --unnamed-color-f8f8f8: #F8F8F8; 
+    --unnamed-color-4f4f4f: #4f4f4f;
     /* font-size: 60%; */
 
     --unnamed-font-family-flexo: Flexo;

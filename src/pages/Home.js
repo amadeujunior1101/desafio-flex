@@ -1,44 +1,116 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 
-import { usersApi } from "../services/api";
+import { usersApi, apiDivida } from "../services/api";
 import TopBar from "../components/TopBar";
 
+import { FaPen, FaTrash } from "react-icons/fa";
+
 function Home() {
-  const apiUsers = [
-    { id: 1, name: "João de Oliveira" },
-    { id: 2, name: "Paulo Morais Arruda" },
-  ];
-  const apiDebt = [
-    { id: 1, placeholder_id: 1, motivo: "Parcela 3 carro", valor: 199.99 },
-    { id: 2, placeholder_id: 1, motivo: "Compra de imóvel", valor: 20000 },
-    { id: 3, placeholder_id: 2, motivo: "Ida ao shopping", valor: 200 },
-  ];
   const [users, setUsers] = useState([]);
-  const [client, setClient] = useState([]);
+  const [client, setClient] = useState({ id: 0, name: "" });
+  const [motive, setMotive] = useState("");
+  const [amount, setAmount] = useState("");
+  const [divida, setDivida] = useState([]);
+  const [userDebt, setUserDebt] = useState([]);
+  const [loading, setLoading] = useState(true);
   // const response = await api.get(`/product/get-product-by-id/${id}`, {
   //   headers: {
   //     token: true,
   //   },
   // });
 
+  function getDate(date) {
+    let full_date = date;
+    let day = full_date.substring(8, 10);
+    let mouth = full_date.substring(5, 7);
+    let year = full_date.substring(0, 4);
+    let dateDivida = day + "-" + mouth + "-" + year;
+    return dateDivida;
+  }
+
   async function findUsers() {
     const userApi = await usersApi.get("/users");
-    console.log(userApi.data);
+    // console.log(userApi.data);
     setUsers(userApi.data);
+    const dividaApi = await apiDivida.get(
+      `/divida?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
+    );
+    setDivida(dividaApi.data.result);
+    console.log(dividaApi.data.result);
   }
 
-  function clickCardUser({ id, name }) {
+  async function clickCardUser({ id, name }) {
     console.log("Id:" + id + "Cliente: " + name);
     setClient({ id: id, name: name });
+
+    const dividasUser = divida.filter((item) => {
+      return item.idUsuario === id;
+    });
+    setUserDebt(dividasUser);
+    if (dividasUser.length > 0) {
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    // setLoading(false);
+    // dividasUser.length > 0 ? setLoading(false) : setLoading(true);
+
+    console.log("Dividas do usuário!");
+    console.log(dividasUser);
+
+    // const dividaApi = await apiDivida.get(`/dividas/${id}`);
+    // const dividaApi = await apiDivida.get(
+    //   `/divida?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
+    // );
+    // console.log(dividaApi.data);
   }
 
-  function UsersList() {
-    setUsers(apiUsers);
+  async function addDebt() {
+    let body = {
+      idUsuario: client.id,
+      motivo: motive,
+      valor: amount,
+    };
+    const addDebt = await apiDivida.post(
+      `/divida?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`,
+      body
+    );
+
+    const dividaApi = await apiDivida.get(
+      `/divida?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
+    );
+    const dividasUser = dividaApi.data.result.filter((item) => {
+      return item.idUsuario === client.id;
+    });
+    setUserDebt(dividasUser);
+    console.log("Array com tds as dividas");
+    console.log(dividaApi.data.result);
+  }
+
+  async function removeDebt(id) {
+    const addDebt = await apiDivida.delete(
+      `/divida/${id}?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
+    );
+
+    const dividasUser = userDebt.filter((item) => {
+      return item._id !== id;
+    });
+    setUserDebt([dividasUser]);
+  }
+
+  function handleClickMotive(e) {
+    setMotive(e.target.value);
+    // console.log(e.target.value);
+  }
+
+  function handleClickAmount(e) {
+    setAmount(e.target.value);
+    // console.log(e.target.value);
   }
 
   useEffect(() => {
-    UsersList();
+    findUsers();
   }, []);
   return (
     <Main>
@@ -48,6 +120,9 @@ function Home() {
           <DivPosition>
             <ListClients>
               <DivCardsBase>
+                <div style={{ width: "100%", marginBottom: 10 }}>
+                  Nossos Clientes
+                </div>
                 {users.map((item) => (
                   <DivCardContainer
                     onClick={() => clickCardUser(item)}
@@ -56,10 +131,10 @@ function Home() {
                     <DivNameUser>
                       <SpanNameUser>{item.name}</SpanNameUser>
                     </DivNameUser>
-                    <DivButton>
+                    {/* <DivButton>
                       <ButtonUpdate>Up</ButtonUpdate>
                       <ButtonRemove>Re</ButtonRemove>
-                    </DivButton>
+                    </DivButton> */}
                   </DivCardContainer>
                 ))}
               </DivCardsBase>
@@ -67,11 +142,11 @@ function Home() {
             <Operation>
               <DivFlexOperation>
                 <DivDicaForm>
-                  <span style={{ fontSize: 30 }}>
+                  <SpanDicaUso>
                     Clique no card ao lado para selecionar um cliente!
-                  </span>
+                  </SpanDicaUso>
                 </DivDicaForm>
-                <DivBaseSelectTop2 style={{ background: "#E8FFE3" }}>
+                <DivBaseSelectTop2 style={{ background: "#228A95" }}>
                   <DivInputs>
                     <Input
                       placeholder="Nome cliente"
@@ -84,7 +159,7 @@ function Home() {
                 </DivBaseSelectTop2>
                 <DivBaseResults>
                   <SpanDividasCliente>
-                    Gerenciamneto de Dividas
+                    Gerenciamento de Dividas
                   </SpanDividasCliente>
                 </DivBaseResults>
                 <DivBaseResults>
@@ -94,8 +169,9 @@ function Home() {
                       <Input
                         placeholder="Informe o motivo"
                         type="text"
-                        name="valor_desejado"
-                        value={client.name}
+                        // name="valor_desejado"
+                        onChange={handleClickMotive}
+                        value={motive}
                         disabled={false}
                       />
                     </DivAlignInput>
@@ -105,14 +181,15 @@ function Home() {
                       <Input
                         placeholder="Informe o valor"
                         type="text"
-                        name="valor_desejado"
-                        value={client.name}
+                        // name="valor_desejado"
+                        onChange={handleClickAmount}
+                        value={amount}
                         disabled={false}
                       />
                     </DivAlignInput>
                     <DivContainerButtom>
                       <DivButtomAdd>
-                        <ButtonValorDesejado onClick={() => {}}>
+                        <ButtonValorDesejado onClick={addDebt}>
                           <SpanButtonValorDesejado>
                             Adicionar
                           </SpanButtonValorDesejado>
@@ -126,25 +203,50 @@ function Home() {
                         </ButtonValorDesejado>
                       </DivButtomCancel>
                     </DivContainerButtom>
-                    <DivDividasCliente>
-                      <SpanDividasCliente>
-                        Dividas do cliente
-                      </SpanDividasCliente>
-                    </DivDividasCliente>
-                    <DivCardsDebt>
-                      <DivCardContainer onClick={() => clickCardUser(0)}>
-                        <DivNameUser>
-                          <SpanNameUser>Motivo: Compra do carro</SpanNameUser>
-                        </DivNameUser>
-                        <DivNameUser>
-                          <SpanNameUser>Valor: 20000</SpanNameUser>
-                        </DivNameUser>
-                        <DivButton>
-                          <ButtonUpdate>Up</ButtonUpdate>
-                          <ButtonRemove>Re</ButtonRemove>
-                        </DivButton>
-                      </DivCardContainer>
-                    </DivCardsDebt>
+                    {loading === false ? (
+                      <>
+                        <DivDividasCliente>
+                          <SpanDividasCliente>
+                            Dividas do cliente
+                          </SpanDividasCliente>
+                        </DivDividasCliente>
+                        <DivCardsDebt>
+                          {userDebt.map((item) => (
+                            <DivCardContainerDebt key={item._id}>
+                              <div style={{ display: "grid" }}>
+                                <DivNameUser>
+                                  <SpanNameUser>
+                                    Data: {getDate(item.criado)}
+                                  </SpanNameUser>
+                                </DivNameUser>
+                                <DivNameUser>
+                                  <SpanNameUser>
+                                    Motivo: {item.motivo}
+                                  </SpanNameUser>
+                                </DivNameUser>
+                                <DivNameUser>
+                                  <SpanNameUser>
+                                    Valor: {item.valor}
+                                  </SpanNameUser>
+                                </DivNameUser>
+                              </div>
+                              <DivButton>
+                                <ButtonUpdate onClick={() => alert(item._id)}>
+                                  <FaPen size={18} color={"#f8f8f8"} />
+                                </ButtonUpdate>
+                                <ButtonRemove
+                                  onClick={() => removeDebt(item._id)}
+                                >
+                                  <FaTrash size={18} color={"#FF0000"} />
+                                </ButtonRemove>
+                              </DivButton>
+                            </DivCardContainerDebt>
+                          ))}
+                        </DivCardsDebt>
+                      </>
+                    ) : (
+                      <></>
+                    )}
                   </DivInputs>
                 </DivBaseResults>
               </DivFlexOperation>
@@ -162,13 +264,14 @@ const Main = styled.main`
 const Wrapper = styled.div`
   width: 100%;
   justify-content: center;
-  background: #f3f3f3;
+  background: #ffffff;
   display: grid;
   align-items: center;
 `;
 const Content = styled.div`
   width: 1280px;
-  background: blue;
+  background: #ffffff;
+  margin-top: 10px;
   @media (min-width: 576px) {
     width: 576px;
   }
@@ -188,7 +291,7 @@ const DivPosition = styled.div`
 const DivCardsBase = styled.div`
   width: 100%;
   display: grid;
-  margin: 10px 10px 0 10px;
+  margin: 0 10px 0 10px;
 `;
 const DivCardsDebt = styled.div`
   width: 100%;
@@ -198,7 +301,7 @@ const DivCardsDebt = styled.div`
 const ListClients = styled.div`
   width: 100%;
   justify-content: center;
-  background: green;
+  background: #ffffff;
   display: flex;
   align-items: center;
   text-align: center;
@@ -206,7 +309,7 @@ const ListClients = styled.div`
 const Operation = styled.div`
   width: 100%;
   justify-content: center;
-  background: brown;
+  background: #228a95;
   display: flex;
   align-items: center;
 `;
@@ -214,22 +317,45 @@ const DivCardContainer = styled.div`
   cursor: pointer;
   width: 100%;
   height: 50px;
-  background: pink;
+  background: var(--unnamed-color-ef9c4b);
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+  border-radius: 5px;
+`;
+const DivCardContainerDebt = styled.div`
+  cursor: pointer;
+  width: 100%;
+  /* height: 50px;s */
+  background: var(--unnamed-color-ef9c4b);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  border-radius: 5px;
 `;
 
 const DivNameUser = styled.div`
   margin-left: 10px;
 `;
-const SpanNameUser = styled.span``;
+const SpanNameUser = styled.span`
+  color: #4f4f4f;
+  font: var(--unnamed-font-style-italic) var(--unnamed-font-weight-bold) 18px/24px
+    var(--unnamed-font-family-flexo);
+`;
 const DivButton = styled.div`
   margin-right: 10px;
+  display: flex;
 `;
-const ButtonUpdate = styled.button``;
-const ButtonRemove = styled.button``;
+const ButtonUpdate = styled.div`
+  margin: auto 5px auto 5px;
+  display: flex;
+`;
+const ButtonRemove = styled.div`
+  margin: auto 5px auto 5px;
+  display: flex;
+`;
 
 const DivBaseSelectTop2 = styled.div`
   width: 100%;
@@ -239,7 +365,7 @@ const DivBaseSelectTop2 = styled.div`
   flex-wrap: wrap;
   /* width: 550px; */
   justify-content: space-between;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
 `;
 
 const DivInputs = styled.div`
@@ -249,14 +375,14 @@ const DivInputs = styled.div`
   height: 96;
   margin-right: 20px;
   /* margin-bottom: 20px; */
-  padding: 20px 0 0 20px;
+  padding: 10px 0 0 20px;
 `;
 
 const Input = styled.input`
   font: var(--unnamed-font-style-italic) var(--unnamed-font-weight-bold) 18px/24px
     var(--unnamed-font-family-flexo);
 
-  color: var(--unnamed-color-ef9c4b);
+  color: var(--unnamed-color-4f4f4f);
   text-align: center;
   border-width: 0px;
   border: none;
@@ -343,22 +469,34 @@ const DivDicaForm = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
+  margin-top: 10px;
 `;
 const DivAlignInput = styled.div`
-  background: red;
+  background: var(--unnamed-color-ef9c4b);
   display: flex;
   height: 62px;
   margin-bottom: 20px;
+  border-radius: 5px;
 `;
 const DivDividasCliente = styled.div`
   justify-content: center;
   display: flex;
-  margin: 10px auto 10px auto;
+  margin: 0 auto 10px auto;
 `;
 const DivContainerButtom = styled.div`
   display: flex;
-  @media(max-width: 500px) {
+  margin-bottom: 20px;
+  @media (max-width: 500px) {
     display: grid;
+    /* width: 400px;  */
+  }
+`;
+const SpanDicaUso = styled.span`
+  font: var(--unnamed-font-style-normal) normal var(--unnamed-font-weight-bold)
+    22px/30px var(--unnamed-font-family-flexo);
+  color: #ffffff;
+  @media (max-width: 500px) {
+    /* display: grid; */
     /* width: 400px;  */
   }
 `;
