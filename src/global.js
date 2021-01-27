@@ -21,6 +21,7 @@ const GlobalStyle = createGlobalStyle`
     --unnamed-color-bc3434: #BC3434;
     --unnamed-color-f8f8f8: #F8F8F8; 
     --unnamed-color-4f4f4f: #4f4f4f;
+    --unnamed-color-986a3c: #986a3c;
     /* font-size: 60%; */
 
     --unnamed-font-family-flexo: Flexo;

@@ -14,6 +14,8 @@ function Home() {
   const [divida, setDivida] = useState([]);
   const [userDebt, setUserDebt] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [option, setOption] = useState("POST");
+  const [_id, set_Id] = useState(0);
   // const response = await api.get(`/product/get-product-by-id/${id}`, {
   //   headers: {
   //     token: true,
@@ -43,10 +45,13 @@ function Home() {
   async function clickCardUser({ id, name }) {
     console.log("Id:" + id + "Cliente: " + name);
     setClient({ id: id, name: name });
+    setMotive("");
+    setAmount("");
 
     const dividasUser = divida.filter((item) => {
       return item.idUsuario === id;
     });
+    setOption("POST");
     setUserDebt(dividasUser);
     if (dividasUser.length > 0) {
       setLoading(false);
@@ -84,19 +89,23 @@ function Home() {
       return item.idUsuario === client.id;
     });
     setUserDebt(dividasUser);
+    setMotive("");
+    setAmount("");
     console.log("Array com tds as dividas");
     console.log(dividaApi.data.result);
   }
 
-  async function removeDebt(id) {
+  async function removeDebt(item) {
+    // return console.log(item)
     const addDebt = await apiDivida.delete(
-      `/divida/${id}?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
+      `/divida/${item._id}?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
     );
 
-    const dividasUser = userDebt.filter((item) => {
-      return item._id !== id;
+    const dividasUser = userDebt.filter((el) => {
+      return el._id !== item._id;
     });
-    setUserDebt([dividasUser]);
+    console.log(dividasUser);
+    setUserDebt(dividasUser);
   }
 
   function handleClickMotive(e) {
@@ -107,6 +116,56 @@ function Home() {
   function handleClickAmount(e) {
     setAmount(e.target.value);
     // console.log(e.target.value);
+  }
+
+  function cancel() {
+    setOption("POST");
+    setMotive("");
+    setAmount("");
+  }
+
+  function handleUpdate(item) {
+    setOption("UPDATE");
+    set_Id(item._id);
+    setMotive(item.motivo);
+    setAmount(item.valor);
+  }
+
+  async function update() {
+    let body = {
+      idUsuario: client.id,
+      motivo: motive,
+      valor: amount,
+    };
+    await apiDivida.put(
+      `/divida/${_id}?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`,
+      body
+    );
+
+    let newUpdateDebt = userDebt.filter((item) => {
+      return item._id === _id;
+    });
+
+    let newUpdateDebt2 = userDebt.filter((item) => {
+      return item._id !== _id;
+    });
+
+    const { idUsuario, criado } = newUpdateDebt[0];
+
+    let newUp = {
+      _id: _id,
+      idUsuario: idUsuario,
+      criado: criado,
+      motivo: motive,
+      valor: amount,
+    };
+
+    newUpdateDebt2.push(newUp);
+    setUserDebt(newUpdateDebt2);
+    setOption("POST");
+    setMotive("");
+    setAmount("");
+    console.log(newUpdateDebt2);
   }
 
   useEffect(() => {
@@ -120,9 +179,7 @@ function Home() {
           <DivPosition>
             <ListClients>
               <DivCardsBase>
-                <div style={{ width: "100%", marginBottom: 10 }}>
-                  Nossos Clientes
-                </div>
+                <SpanTitleTableCliente>Nossos Clientes</SpanTitleTableCliente>
                 {users.map((item) => (
                   <DivCardContainer
                     onClick={() => clickCardUser(item)}
@@ -172,7 +229,7 @@ function Home() {
                         // name="valor_desejado"
                         onChange={handleClickMotive}
                         value={motive}
-                        disabled={false}
+                        disabled={client.id !== 0 ? false : true}
                       />
                     </DivAlignInput>
 
@@ -184,23 +241,52 @@ function Home() {
                         // name="valor_desejado"
                         onChange={handleClickAmount}
                         value={amount}
-                        disabled={false}
+                        disabled={client.id !== 0 ? false : true}
                       />
                     </DivAlignInput>
                     <DivContainerButtom>
-                      <DivButtomAdd>
-                        <ButtonValorDesejado onClick={addDebt}>
-                          <SpanButtonValorDesejado>
-                            Adicionar
-                          </SpanButtonValorDesejado>
-                        </ButtonValorDesejado>
-                      </DivButtomAdd>
+                      {option === "POST" ? (
+                        motive && amount !== "" ? (
+                          <DivButtomAdd>
+                            <ButtonAddActive onClick={addDebt}>
+                              <SpanButtonValorDesejado>
+                                Adicionar
+                              </SpanButtonValorDesejado>
+                            </ButtonAddActive>
+                          </DivButtomAdd>
+                        ) : (
+                          <DivButtomAdd>
+                            <ButtonAddNoActive>
+                              <SpanButtonValorDesejado>
+                                Adicionar
+                              </SpanButtonValorDesejado>
+                            </ButtonAddNoActive>
+                          </DivButtomAdd>
+                        )
+                      ) : motive && amount !== "" ? (
+                        <DivButtomAdd>
+                          <ButtonAddActive onClick={update}>
+                            <SpanButtonValorDesejado>
+                              Atualizar
+                            </SpanButtonValorDesejado>
+                          </ButtonAddActive>
+                        </DivButtomAdd>
+                      ) : (
+                        <DivButtomAdd>
+                          <ButtonAddNoActive>
+                            <SpanButtonValorDesejado>
+                              Atualizar
+                            </SpanButtonValorDesejado>
+                          </ButtonAddNoActive>
+                        </DivButtomAdd>
+                      )}
+
                       <DivButtomCancel>
-                        <ButtonValorDesejado onClick={() => {}}>
+                        <ButtonAddActive onClick={cancel}>
                           <SpanButtonValorDesejado>
                             Cancelar
                           </SpanButtonValorDesejado>
-                        </ButtonValorDesejado>
+                        </ButtonAddActive>
                       </DivButtomCancel>
                     </DivContainerButtom>
                     {loading === false ? (
@@ -212,7 +298,10 @@ function Home() {
                         </DivDividasCliente>
                         <DivCardsDebt>
                           {userDebt.map((item) => (
-                            <DivCardContainerDebt key={item._id}>
+                            <DivCardContainerDebt
+                              key={item._id}
+                              // onClick={() => handleUpdate(item)}
+                            >
                               <div style={{ display: "grid" }}>
                                 <DivNameUser>
                                   <SpanNameUser>
@@ -231,13 +320,13 @@ function Home() {
                                 </DivNameUser>
                               </div>
                               <DivButton>
-                                <ButtonUpdate onClick={() => alert(item._id)}>
-                                  <FaPen size={18} color={"#f8f8f8"} />
-                                </ButtonUpdate>
-                                <ButtonRemove
-                                  onClick={() => removeDebt(item._id)}
+                                <ButtonUpdate
+                                  onClick={() => handleUpdate(item)}
                                 >
-                                  <FaTrash size={18} color={"#FF0000"} />
+                                  <FaPen size={18} color={"#4f4f4f"} />
+                                </ButtonUpdate>
+                                <ButtonRemove onClick={() => removeDebt(item)}>
+                                  <FaTrash size={18} color={"#4f4f4f"} />
                                 </ButtonRemove>
                               </DivButton>
                             </DivCardContainerDebt>
@@ -325,7 +414,7 @@ const DivCardContainer = styled.div`
   border-radius: 5px;
 `;
 const DivCardContainerDebt = styled.div`
-  cursor: pointer;
+  /* cursor: pointer; */
   width: 100%;
   /* height: 50px;s */
   background: var(--unnamed-color-ef9c4b);
@@ -351,10 +440,12 @@ const DivButton = styled.div`
 const ButtonUpdate = styled.div`
   margin: auto 5px auto 5px;
   display: flex;
+  cursor: pointer;
 `;
 const ButtonRemove = styled.div`
   margin: auto 5px auto 5px;
   display: flex;
+  cursor: pointer;
 `;
 
 const DivBaseSelectTop2 = styled.div`
@@ -421,7 +512,7 @@ const DivButtomCancel = styled.div`
     margin-top: 20px;
   }
 `;
-const ButtonValorDesejado = styled.div`
+const ButtonAddActive = styled.div`
   width: 100%;
   height: 54px;
   display: flex;
@@ -430,6 +521,16 @@ const ButtonValorDesejado = styled.div`
   background: var(--unnamed-color-ef9c4b) 0% 0% no-repeat padding-box;
   border-radius: 5px;
   cursor: pointer;
+`;
+const ButtonAddNoActive = styled.div`
+  width: 100%;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--unnamed-color-986a3c) 0% 0% no-repeat padding-box;
+  border-radius: 5px;
+  /* cursor: pointer; */
 `;
 const SpanButtonValorDesejado = styled.span`
   font: var(--unnamed-font-style-normal) normal var(--unnamed-font-weight-bold)
@@ -495,6 +596,15 @@ const SpanDicaUso = styled.span`
   font: var(--unnamed-font-style-normal) normal var(--unnamed-font-weight-bold)
     22px/30px var(--unnamed-font-family-flexo);
   color: #ffffff;
+  @media (max-width: 500px) {
+    /* display: grid; */
+    /* width: 400px;  */
+  }
+`;
+const SpanTitleTableCliente = styled.span`
+  font: var(--unnamed-font-style-normal) normal var(--unnamed-font-weight-bold)
+    22px/30px var(--unnamed-font-family-flexo);
+  color: #4f4f4f;
   @media (max-width: 500px) {
     /* display: grid; */
     /* width: 400px;  */
