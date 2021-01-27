@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 
-import { usersApi, apiDivida } from "../services/api";
-import TopBar from "../components/TopBar";
+import { usersApi, apiDivida } from "../../services/api";
+import TopBar from "../../components/TopBar";
 
 import { FaPen, FaTrash } from "react-icons/fa";
 
@@ -11,16 +11,11 @@ function Home() {
   const [client, setClient] = useState({ id: 0, name: "" });
   const [motive, setMotive] = useState("");
   const [amount, setAmount] = useState("");
-  const [divida, setDivida] = useState([]);
+  // const [divida, setDivida] = useState([]);
   const [userDebt, setUserDebt] = useState([]);
   const [loading, setLoading] = useState(true);
   const [option, setOption] = useState("POST");
   const [_id, set_Id] = useState(0);
-  // const response = await api.get(`/product/get-product-by-id/${id}`, {
-  //   headers: {
-  //     token: true,
-  //   },
-  // });
 
   function getDate(date) {
     let full_date = date;
@@ -33,22 +28,22 @@ function Home() {
 
   async function findUsers() {
     const userApi = await usersApi.get("/users");
-    // console.log(userApi.data);
     setUsers(userApi.data);
-    const dividaApi = await apiDivida.get(
-      `/divida?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
-    );
-    setDivida(dividaApi.data.result);
-    console.log(dividaApi.data.result);
+    await apiDivida.get(`/divida?uuid=${process.env.REACT_APP_KEY}`);
   }
 
   async function clickCardUser({ id, name }) {
-    console.log("Id:" + id + "Cliente: " + name);
     setClient({ id: id, name: name });
     setMotive("");
     setAmount("");
 
-    const dividasUser = divida.filter((item) => {
+    const dividaApi = await apiDivida.get(
+      `/divida?uuid=${process.env.REACT_APP_KEY}`
+    );
+
+    const div = dividaApi.data.result;
+
+    const dividasUser = div.filter((item) => {
       return item.idUsuario === id;
     });
     setOption("POST");
@@ -58,17 +53,6 @@ function Home() {
     } else {
       setLoading(true);
     }
-    // setLoading(false);
-    // dividasUser.length > 0 ? setLoading(false) : setLoading(true);
-
-    console.log("Dividas do usuário!");
-    console.log(dividasUser);
-
-    // const dividaApi = await apiDivida.get(`/dividas/${id}`);
-    // const dividaApi = await apiDivida.get(
-    //   `/divida?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
-    // );
-    // console.log(dividaApi.data);
   }
 
   async function addDebt() {
@@ -77,45 +61,38 @@ function Home() {
       motivo: motive,
       valor: amount,
     };
-    const addDebt = await apiDivida.post(
-      `/divida?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`,
-      body
-    );
+    await apiDivida.post(`/divida?uuid=${process.env.REACT_APP_KEY}`, body);
 
     const dividaApi = await apiDivida.get(
-      `/divida?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
+      `/divida?uuid=${process.env.REACT_APP_KEY}`
     );
     const dividasUser = dividaApi.data.result.filter((item) => {
       return item.idUsuario === client.id;
     });
+    setLoading(false);
     setUserDebt(dividasUser);
     setMotive("");
     setAmount("");
-    console.log("Array com tds as dividas");
-    console.log(dividaApi.data.result);
   }
 
   async function removeDebt(item) {
-    // return console.log(item)
-    const addDebt = await apiDivida.delete(
-      `/divida/${item._id}?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`
+    await apiDivida.delete(
+      `/divida/${item._id}?uuid=${process.env.REACT_APP_KEY}`
     );
 
     const dividasUser = userDebt.filter((el) => {
       return el._id !== item._id;
     });
-    console.log(dividasUser);
+
     setUserDebt(dividasUser);
   }
 
   function handleClickMotive(e) {
     setMotive(e.target.value);
-    // console.log(e.target.value);
   }
 
   function handleClickAmount(e) {
     setAmount(e.target.value);
-    // console.log(e.target.value);
   }
 
   function cancel() {
@@ -138,7 +115,7 @@ function Home() {
       valor: amount,
     };
     await apiDivida.put(
-      `/divida/${_id}?uuid=4fc7ccbd-97d0-4a84-a06e-a436aee00403`,
+      `/divida/${_id}?uuid=${process.env.REACT_APP_KEY}`,
       body
     );
 
@@ -165,7 +142,6 @@ function Home() {
     setOption("POST");
     setMotive("");
     setAmount("");
-    console.log(newUpdateDebt2);
   }
 
   useEffect(() => {
@@ -188,10 +164,6 @@ function Home() {
                     <DivNameUser>
                       <SpanNameUser>{item.name}</SpanNameUser>
                     </DivNameUser>
-                    {/* <DivButton>
-                      <ButtonUpdate>Up</ButtonUpdate>
-                      <ButtonRemove>Re</ButtonRemove>
-                    </DivButton> */}
                   </DivCardContainer>
                 ))}
               </DivCardsBase>
@@ -226,7 +198,6 @@ function Home() {
                       <Input
                         placeholder="Informe o motivo"
                         type="text"
-                        // name="valor_desejado"
                         onChange={handleClickMotive}
                         value={motive}
                         disabled={client.id !== 0 ? false : true}
@@ -238,7 +209,6 @@ function Home() {
                       <Input
                         placeholder="Informe o valor"
                         type="text"
-                        // name="valor_desejado"
                         onChange={handleClickAmount}
                         value={amount}
                         disabled={client.id !== 0 ? false : true}
@@ -298,10 +268,7 @@ function Home() {
                         </DivDividasCliente>
                         <DivCardsDebt>
                           {userDebt.map((item) => (
-                            <DivCardContainerDebt
-                              key={item._id}
-                              // onClick={() => handleUpdate(item)}
-                            >
+                            <DivCardContainerDebt key={item._id}>
                               <div style={{ display: "grid" }}>
                                 <DivNameUser>
                                   <SpanNameUser>
