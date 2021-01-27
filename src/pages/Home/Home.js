@@ -11,7 +11,6 @@ function Home() {
   const [client, setClient] = useState({ id: 0, name: "" });
   const [motive, setMotive] = useState("");
   const [amount, setAmount] = useState("");
-  // const [divida, setDivida] = useState([]);
   const [userDebt, setUserDebt] = useState([]);
   const [loading, setLoading] = useState(true);
   const [option, setOption] = useState("POST");
